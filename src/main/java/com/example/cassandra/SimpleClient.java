@@ -65,6 +65,7 @@ public class SimpleClient {
 		queryLogger = QueryLogger.builder().withConstantThreshold(500).build();
         cluster.register(queryLogger);
            System.out.printf("DataStax Java Driver: %s\n", Cluster.getDriverVersion());
+	   System.out.printf("Directing traffic to: %s\n", dc);	  
            Metadata metadata = cluster.getMetadata();
            System.out.printf("Connected to cluster: %s\n", metadata.getClusterName());
            for (Host host : metadata.getAllHosts()) {
@@ -202,7 +203,7 @@ public class SimpleClient {
 			  if (args.length > 1 ) username = args[1];
 			  if (args.length > 2 ) password = args[2];
 			  if (args.length > 3 ) noTests  = Integer.parseInt(args[3]);
-			  if (args.length > 4 ) dc       = args[4].toString();
+			  if (args.length > 4 ) dc       = args[4];
 		  } else { 
 			  address = "127.0.0.1";
 		  }
