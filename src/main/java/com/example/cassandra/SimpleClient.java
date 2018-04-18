@@ -47,10 +47,10 @@ public class SimpleClient {
 	  try {
 		QueryLogger queryLogger;
 		cluster = Cluster.builder()
-				    //.addContactPoint(node)
-                    .addContactPoint("52.90.124.167")  //DC1
-                    .addContactPoint("35.174.12.21")   //DC2
-                    .addContactPoint("34.239.44.145")  //DC3
+	            .addContactPoint(node)
+                    //.addContactPoint("52.90.124.167")  //DC1
+                    //.addContactPoint("35.174.12.21")   //DC2
+                    //.addContactPoint("34.239.44.145")  //DC3
                     .withAuthProvider(new PlainTextAuthProvider(username, password))
                     .withLoadBalancingPolicy(
                     		                 DCAwareRoundRobinPolicy.builder()
@@ -213,7 +213,7 @@ public class SimpleClient {
       }       
 	  SimpleClient client = new SimpleClient();
 	  try {
-		   //ADD TEST(S) BELOW HERE 
+	       //ADD TEST(S) BELOW HERE 
 	       client.connect(address, username, password, dc);
 	       client.constantLoad(noTests, dc);
 	       //ADD TEST(S) ABOVE HERE 
@@ -224,5 +224,4 @@ public class SimpleClient {
 	  }
       client.close();
    }
-
 }
