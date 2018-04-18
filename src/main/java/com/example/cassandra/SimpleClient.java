@@ -1,38 +1,17 @@
 package com.example.cassandra;
 
 
-import java.io.BufferedReader;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.AuthenticationException;
+import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.Calendar;
-import java.util.TimeZone;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.querybuilder.*;
-import com.datastax.driver.core.policies.*;
-import com.datastax.driver.core.utils.*;
-import com.datastax.driver.core.exceptions.*;
-
-import static com.datastax.driver.core.ProtocolVersion.*;
-
-import com.google.common.util.concurrent.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 
 
@@ -154,17 +133,27 @@ public class SimpleClient {
 	   item = list.get(index);
 	   return item;
    }
-   
-   public void constantLoad (int noTests, String dc) {
+
+	public int randomNumber(int len) {
+        Random rand = new Random();
+        return rand.nextInt(len);
+   }
+
+
+	public void constantLoad (int noTests, String dc) {
 	   String Keyspace      = "tester";
 	   String Table         = "test" + "_" + dc;
-	   String Query         = "INSERT INTO "  + Keyspace + "." + Table + " (id, something) VALUES ( ?, ?);";
-       PreparedStatement ps = session.prepare(Query);
+	   String insertQuery   = "INSERT INTO "   + Keyspace + "." + Table + " (id, something) VALUES ( ?, ?);";
+	   String readQuery     = "SELECT * FROM " + Keyspace + "." + Table + " WHERE id = ? ";
+       PreparedStatement ps1 = session.prepare(insertQuery);
+       PreparedStatement ps2 = session.prepare(readQuery);
        BoundStatement bs = null;
        session.execute(new SimpleStatement("TRUNCATE TABLE " + Keyspace + "." + Table + ";"));
-       System.out.print("Inserting " + noTests + " rows...\n");
+       System.out.print("Executing " + noTests + " read/write operations...\n");
        for (int i = 1; i <= noTests; i+=1) {
-           bs = ps.bind(i, dc + " garbage");
+           bs = ps1.bind(i, dc + " garbage");
+           session.execute(bs);
+           bs = ps2.bind(randomNumber(i));
            session.execute(bs);
        }
        System.out.print("Completed!\n");
@@ -195,7 +184,7 @@ public class SimpleClient {
 	  String username = "cassandra";
 	  String password = "cassandra";
 	  String dc       = "DC1";
-	  int    noTests    = 10000;
+	  int    noTests    = 10;
 	  try {
 		  if (args.length > 0 ) {
 			  address = args[0];
