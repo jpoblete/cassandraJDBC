@@ -56,7 +56,7 @@ public class SimpleClient {
                     		                 DCAwareRoundRobinPolicy.builder()
                     		                 .withLocalDc(dc)
                     		                 .withUsedHostsPerRemoteDc(2)
-                    		                 //.allowRemoteDCsForLocalConsistencyLevel()
+                    		                 .allowRemoteDCsForLocalConsistencyLevel()
                     		                 .build()
                     		                )
                     .withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED)
@@ -71,6 +71,7 @@ public class SimpleClient {
                System.out.printf("Datatacenter: %-16s; Host: %-16s; Rack: %s; Cassandra %s\n", host.getDatacenter(), host.getAddress(), host.getRack(), host.getCassandraVersion());
                }
            session = cluster.connect();
+	   
            System.out.print("\n");
 	  } catch (AuthenticationException ae) {
 		  System.out.printf("ERROR: Username and/or password are incorrect\n");
