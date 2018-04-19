@@ -41,7 +41,7 @@ public class SimpleClient {
                     .withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED)
                     .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.ONE).setDefaultIdempotence(true))
                     .build();
-		queryLogger = QueryLogger.builder().withConstantThreshold(500).build();
+		queryLogger = QueryLogger.builder().withConstantThreshold(5).build();
         cluster.register(queryLogger);
            System.out.printf("DataStax Java Driver: %s\n", Cluster.getDriverVersion());
 	   System.out.printf("Directing traffic to: %s\n", dc);	  
