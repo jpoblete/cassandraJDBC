@@ -4,10 +4,12 @@ package com.example.cassandra;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.AuthenticationException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
@@ -36,6 +38,7 @@ public class SimpleClient {
 						 )
                          .withPoolingOptions(new PoolingOptions().setConnectionsPerHost(HostDistance.LOCAL,1,10)
 							                                     .setMaxRequestsPerConnection(HostDistance.LOCAL,10)
+								                                 .setNewConnectionThreshold(HostDistance.LOCAL,4)
 							                                     .setPoolTimeoutMillis(0)
 						 )
 				         .withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED)
@@ -147,13 +150,15 @@ public class SimpleClient {
 	   String Insert        = "INSERT INTO  " + Keyspace + "." + Table + " (id, data) VALUES ( ?, ?);";
 	   PreparedStatement ps;
 	   BoundStatement    bs;
+
 	   System.out.print("Creating table... \n");
 	   session.execute(DDL);
 	   ps = session.prepare(Insert);
        session.execute(Truncate);
        System.out.print("Executing " + noTests + "...\n");
        for (int i = 1; i <= noTests; i+=1) {
-       	   bs = ps.bind(i, "x");
+		   String data = RandomString.make(128);
+       	   bs = ps.bind(i, data);
 		   //session.execute(bs);
 		   session.executeAsync(bs);
 		   for (Host host : session.getState().getConnectedHosts()) {
@@ -193,7 +198,7 @@ public class SimpleClient {
 	  String address  = null;
 	  String username = "cassandra";
 	  String password = "cassandra";
-	  String dc       = "datacenter1";
+	  String dc       = "SearchGraphAnalytics";
 	  int    noTests  = 100;
 	  try {
 		  if (args.length > 0 ) {
