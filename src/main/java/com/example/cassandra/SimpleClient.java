@@ -199,7 +199,7 @@ public class SimpleClient {
 	  String username = "cassandra";
 	  String password = "cassandra";
 	  String dc       = "SearchGraphAnalytics";
-	  int    noTests  = 100;
+	  int    noTests  = 10;
 	  try {
 		  if (args.length > 0 ) {
 			  address = args[0];
