@@ -18,7 +18,7 @@ import java.util.UUID;
 public class SimpleClient {
    private Cluster cluster;
    private Session session;
-   public Session getSession() {
+   public  Session getSession() {
 	      return this.session;
 	   }
       
@@ -26,33 +26,32 @@ public class SimpleClient {
 	  try {
 		QueryLogger queryLogger;
 		cluster = Cluster.builder()
-	            .addContactPoint(node)
-                    //.addContactPoint("52.90.124.167")  //DC1
-                    //.addContactPoint("35.174.12.21")   //DC2
-                    //.addContactPoint("34.239.44.145")  //DC3
-                    .withAuthProvider(new PlainTextAuthProvider(username, password))
-                    .withLoadBalancingPolicy(
-                    		                 DCAwareRoundRobinPolicy.builder()
-                    		                 .withLocalDc(dc)
-                    		                 .withUsedHostsPerRemoteDc(2)
-                    		                 .allowRemoteDCsForLocalConsistencyLevel()
-                    		                 .build()
-                    		                )
-                    .withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED)
-                    .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.ONE).setDefaultIdempotence(true))
-                    .build();
+	                     .addContactPoint(node)
+				         .withAuthProvider(new PlainTextAuthProvider(username, password))
+                         .withLoadBalancingPolicy(DCAwareRoundRobinPolicy.builder()
+                    	 	                                             .withLocalDc(dc)
+                    		                                             .withUsedHostsPerRemoteDc(2)
+                    		                                             .allowRemoteDCsForLocalConsistencyLevel()
+									                                     .build()
+						 )
+                         .withPoolingOptions(new PoolingOptions().setConnectionsPerHost(HostDistance.LOCAL,1,10)
+							                                     .setMaxRequestsPerConnection(HostDistance.LOCAL,10)
+							                                     .setPoolTimeoutMillis(0)
+						 )
+				         .withProtocolVersion(ProtocolVersion.NEWEST_SUPPORTED)
+                         .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.LOCAL_ONE).setDefaultIdempotence(true))
+                         .build();
 		queryLogger = QueryLogger.builder().withConstantThreshold(5).build();
         cluster.register(queryLogger);
-           System.out.printf("DataStax Java Driver: %s\n", Cluster.getDriverVersion());
-	   System.out.printf("Directing traffic to: %s\n", dc);	  
-           Metadata metadata = cluster.getMetadata();
-           System.out.printf("Connected to cluster: %s\n", metadata.getClusterName());
-           for (Host host : metadata.getAllHosts()) {
-               System.out.printf("Datatacenter: %-16s; Host: %-16s; Rack: %s; Cassandra %s\n", host.getDatacenter(), host.getAddress(), host.getRack(), host.getCassandraVersion());
-               }
-           session = cluster.connect();
-	   
-           System.out.print("\n");
+        System.out.printf("DataStax Java Driver: %s\n", Cluster.getDriverVersion());
+	    System.out.printf("Directing traffic to: %s\n", dc);
+	    Metadata metadata = cluster.getMetadata();
+	    System.out.printf("Connected to cluster: %s\n", metadata.getClusterName());
+	    for (Host host : metadata.getAllHosts()) {
+	    	 System.out.printf("Datatacenter: %-16s; Host: %-16s; Rack: %s; Cassandra %s\n", host.getDatacenter(), host.getAddress(), host.getRack(), host.getCassandraVersion());
+	    }
+	    session = cluster.connect();
+	    System.out.print("\n");
 	  } catch (AuthenticationException ae) {
 		  System.out.printf("ERROR: Username and/or password are incorrect\n");
 		  System.exit(1);
@@ -141,20 +140,31 @@ public class SimpleClient {
 
 
 	public void constantLoad (int noTests, String dc) {
-	   String Keyspace      = "tester";
-	   String Table         = "test" + "_" + dc;
-	   String insertQuery   = "INSERT INTO "   + Keyspace + "." + Table + " (id, something) VALUES ( ?, ?);";
-	   String readQuery     = "SELECT * FROM " + Keyspace + "." + Table + " WHERE id = ? ";
-       PreparedStatement ps1 = session.prepare(insertQuery);
-       PreparedStatement ps2 = session.prepare(readQuery);
-       BoundStatement bs = null;
-       session.execute(new SimpleStatement("TRUNCATE TABLE " + Keyspace + "." + Table + ";"));
-       System.out.print("Executing " + noTests + " read/write operations...\n");
+	   String Keyspace      = "workspace";
+	   String Table         = "constant_load";
+	   String DDL           = "CREATE TABLE IF NOT EXISTS " + Keyspace + "." + Table + " (id int PRIMARY KEY, data text);";
+	   String Truncate      = "TRUNCATE TABLE " + Keyspace + "." + Table + ";";
+	   String Insert        = "INSERT INTO  " + Keyspace + "." + Table + " (id, data) VALUES ( ?, ?);";
+	   PreparedStatement ps;
+	   BoundStatement    bs;
+	   System.out.print("Creating table... \n");
+	   session.execute(DDL);
+	   ps = session.prepare(Insert);
+       session.execute(Truncate);
+       System.out.print("Executing " + noTests + "...\n");
        for (int i = 1; i <= noTests; i+=1) {
-           bs = ps1.bind(i, dc + " garbage");
-           session.execute(bs);
-           bs = ps2.bind(randomNumber(i));
-           session.execute(bs);
+       	   bs = ps.bind(i, "x");
+		   //session.execute(bs);
+		   session.executeAsync(bs);
+		   for (Host host : session.getState().getConnectedHosts()) {
+			   Session.State state=session.getState();
+			   int inFlightQueries = state.getInFlightQueries(host);
+			   int connections     = state.getOpenConnections(host);
+               if ( connections > 0 ) {
+				   System.out.print("Connections: " + connections + " Inflight: " + inFlightQueries + "\n");
+			   }
+		   }
+
        }
        System.out.print("Completed!\n");
    }
@@ -180,11 +190,11 @@ public class SimpleClient {
 
    public static void main(String[] args) throws Exception {	   	   
 	  //InetAddress address = null;
-	  String address = null;
+	  String address  = null;
 	  String username = "cassandra";
 	  String password = "cassandra";
-	  String dc       = "DC1";
-	  int    noTests    = 10;
+	  String dc       = "datacenter1";
+	  int    noTests  = 100;
 	  try {
 		  if (args.length > 0 ) {
 			  address = args[0];

@@ -12,6 +12,11 @@
   		<artifactId>cassandra-driver-core</artifactId>
   		<version>3.4.0</version>
   	</dependency>
+	  <dependency>
+		  <groupId>com.datastax.cassandra</groupId>
+		  <artifactId>cassandra-driver-extras</artifactId>
+		  <version>3.4.0</version>
+	  </dependency>
   	<dependency>
   		<groupId>org.slf4j</groupId>
   		<artifactId>slf4j-log4j12</artifactId>
@@ -36,6 +41,14 @@
 							<mainClass>com.example.cassandra.SimpleClient</mainClass>
 						</manifest>
 					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>8</source>
+					<target>8</target>
 				</configuration>
 			</plugin>
 		</plugins>
